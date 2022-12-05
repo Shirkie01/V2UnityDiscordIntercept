@@ -24,10 +24,13 @@ namespace V2UnityDiscordIntercept
 
         private IDictionary<int, PacketHandler> packetHandlers = new Dictionary<int, PacketHandler>();
 
+        private int memberId;
+
         public void CreateLobby(string lobbyName)
         {
             if (server == null)
             {
+                memberId = 1;
                 _lobbyName = lobbyName;
                 Username = lobbyName;
                 var config = new NetPeerConfiguration(appIdentifier)
@@ -58,6 +61,7 @@ namespace V2UnityDiscordIntercept
             client = new NetClient(config);
             client.Start();
             var netConnection = client.Connect(ipAddress, port);
+            memberId = client.ConnectionsCount;
         }
 
         public void JoinLobby(long lobbyId, string secret)
@@ -362,6 +366,11 @@ namespace V2UnityDiscordIntercept
             {
                 lobbyMetadata[key] = value;
             }
+        }
+
+        public int GetMemberId()
+        {
+            return memberId;
         }
     }
 }
