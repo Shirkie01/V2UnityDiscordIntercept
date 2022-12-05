@@ -11,6 +11,10 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool JoinLobby(Demo __instance, long lobbyId, string secret)
         {
+            if (Plugin.Network.IsServer)
+                return false;
+
+
             __instance.componentPanel.gameObject.SetActive(true);
             __instance.controlPanel.gameObject.SetActive(true);
             __instance.modeLabel.gameObject.SetActive(false);

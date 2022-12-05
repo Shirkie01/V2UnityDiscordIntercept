@@ -14,7 +14,7 @@ namespace V2UnityDiscordIntercept
         private NetServer server;
         private NetClient client;
 
-        private bool IsServer => server != null;
+        public bool IsServer => server != null;
         public NetPeer Peer => server ?? client as NetPeer;
 
         private string _lobbyName;
@@ -146,6 +146,10 @@ namespace V2UnityDiscordIntercept
             msg.Write(data);
             foreach (var connection in Peer.Connections)
             {
+                // Skip sending the message to ourselves.
+                if(connection.RemoteUniqueIdentifier == Peer.UniqueIdentifier)
+                    continue;
+
                 Peer.SendMessage(msg, connection, channelId == 0 ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.UnreliableSequenced, channelId);
             }
         }
@@ -186,11 +190,11 @@ namespace V2UnityDiscordIntercept
 
             if (channelId == 0)
             {
-                HandleTCPData(msg.Data, Peer.UniqueIdentifier);
+                HandleTCPData(msg.Data, msg.SenderConnection.RemoteUniqueIdentifier);
             }
             if (channelId == 1 && msg.Data.Length >= 4)
             {
-                HandleUDPData(msg.Data, Peer.UniqueIdentifier);
+                HandleUDPData(msg.Data, msg.SenderConnection.RemoteUniqueIdentifier);
             }
         }
 
