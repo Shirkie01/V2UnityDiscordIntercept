@@ -5,7 +5,7 @@ using V2UnityDiscordIntercept.Patches;
 
 namespace V2UnityDiscordIntercept
 {
-    [BepInEx.BepInPlugin("c1b6540e-a6ed-4f10-89b3-8e715ee70a78", "V2Unity Discord Intercept", "0.0.1-alpha")]
+    [BepInEx.BepInPlugin("c1b6540e-a6ed-4f10-89b3-8e715ee70a78", "V2Unity Discord Intercept", "0.0.2-alpha")]
     public class Plugin : BaseUnityPlugin
     {
         private Rect windowRect = new Rect(100, 100, 300, 180);
