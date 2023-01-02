@@ -21,8 +21,8 @@
     <Reference Include="BepInEx.Core">
       <HintPath>D:\Users\Ryan\Downloads\v2unity\BepInEx\core\BepInEx.Core.dll</HintPath>
     </Reference>
-    <Reference Include="BepInEx.Unity.Mono">
-      <HintPath>D:\Users\Ryan\Downloads\v2unity\BepInEx\core\BepInEx.Unity.Mono.dll</HintPath>
+    <Reference Include="BepInEx.Unity">
+      <HintPath>D:\Users\Ryan\Downloads\v2unity\BepInEx\core\BepInEx.Unity.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>D:\Users\Ryan\Downloads\v2unity\Vigilante2Unity_Data\Managed\UnityEngine.dll</HintPath>
