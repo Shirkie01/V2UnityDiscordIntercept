@@ -149,14 +149,8 @@ namespace V2UnityDiscordIntercept
         {
             var msg = Peer.CreateMessage();
             msg.Write(data);
-            foreach (var connection in Peer.Connections)
-            {
-                // Skip sending the message to ourselves.
-                if(connection.RemoteUniqueIdentifier == Peer.UniqueIdentifier)
-                    continue;
 
-                Peer.SendMessage(msg, connection, channelId == 0 ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.UnreliableSequenced, channelId);
-            }
+            Peer.SendMessage(msg, Peer.Connections, channelId == 0 ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.UnreliableSequenced, channelId);
         }
 
         public void SendNetworkMessageToUser(long userId, byte channelId, byte[] data)
