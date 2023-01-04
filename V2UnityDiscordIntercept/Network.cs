@@ -142,6 +142,7 @@ namespace V2UnityDiscordIntercept
         public void DeleteLobby()
         {
             server.Shutdown("The server is shutting down.");
+            server = null;
         }
 
         public void SendNetworkMessage(byte channelId, byte[] data)
