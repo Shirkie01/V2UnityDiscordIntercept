@@ -147,6 +147,9 @@ namespace V2UnityDiscordIntercept
 
         public void SendNetworkMessage(byte channelId, byte[] data)
         {
+            if(!Peer.Connections.Any())
+                return;
+
             var msg = Peer.CreateMessage();
             msg.Write(data);
 
