@@ -9,7 +9,7 @@ namespace V2UnityDiscordIntercept
     public class Plugin : BaseUnityPlugin
     {
         private Rect windowRect = new Rect(100, 100, 300, 180);
-        private string ipAddress;
+        private string ipAddress = "localhost";
 
         internal static Network Network = new Network();
 
