@@ -29,8 +29,7 @@ namespace V2UnityDiscordIntercept
         public void CreateLobby(string lobbyName)
         {
             if (server == null)
-            {
-                memberId = 1;
+            {                
                 _lobbyName = lobbyName;
                 Username = lobbyName;
                 var config = new NetPeerConfiguration(appIdentifier)
@@ -38,21 +37,23 @@ namespace V2UnityDiscordIntercept
                     Port = Port
                 };
                 config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
+                config.EnableMessageType(NetIncomingMessageType.DiscoveryResponse);
                 config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
                 config.EnableMessageType(NetIncomingMessageType.StatusChanged);
 
                 server = new NetServer(config);
                 server.Start();
-                Console.WriteLine($"Started server with name {_lobbyName}.");
+                Logger.Log($"Started server with name {_lobbyName} and id: {server.UniqueIdentifier}.");
 
-                DiscordController.instance.SetLobbyOwner(Peer.UniqueIdentifier);
+                DiscordController.instance.SetLobbyOwner(Peer.UniqueIdentifier);                
 
-                InitializePacketHandlers();
+                InitializePacketHandlers();                
             }
         }
 
         public void ConnectToLobby(string ipAddress, int port)
         {
+            Logger.Log($"Connecting to server at {ipAddress}:{port}");
             Port = port;
             var config = new NetPeerConfiguration(appIdentifier);
             config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
@@ -61,12 +62,13 @@ namespace V2UnityDiscordIntercept
             client = new NetClient(config);
             client.Start();
             var netConnection = client.Connect(ipAddress, port);
-            memberId = client.ConnectionsCount;
+            Logger.Log($"Created connection with id: {client.UniqueIdentifier}");
+            memberId = client.ConnectionsCount - 1;
         }
 
         public void JoinLobby(long lobbyId, string secret)
         {
-            Console.WriteLine($"Network.JoinLobby({lobbyId}, {secret})");
+            Logger.Log($"Network.JoinLobby({lobbyId}, {secret})");
             InitializePacketHandlers();
             ClientSend.Joined();
         }
@@ -99,14 +101,14 @@ namespace V2UnityDiscordIntercept
                         break;
 
                     case NetIncomingMessageType.DiscoveryResponse:
-                        Console.WriteLine($"Found server at {msg.SenderEndPoint} with name {msg.ReadString()}");
+                        Logger.Log($"Found server at {msg.SenderEndPoint} with name {msg.ReadString()}");
                         break;
 
                     case NetIncomingMessageType.VerboseDebugMessage:
                     case NetIncomingMessageType.DebugMessage:
                     case NetIncomingMessageType.WarningMessage:
                     case NetIncomingMessageType.ErrorMessage:
-                        Console.WriteLine(msg.ReadString());
+                        Logger.Log(msg.ReadString());
                         break;
 
                     case NetIncomingMessageType.StatusChanged:
@@ -122,7 +124,7 @@ namespace V2UnityDiscordIntercept
                         break;
 
                     default:
-                        Console.WriteLine("Unhandled type: " + msg.MessageType + "\n" + msg.ToString());
+                        Logger.Log("Unhandled type: " + msg.MessageType + "\n" + msg.ToString());
                         break;
                 }
                 Peer.Recycle(msg);
@@ -131,6 +133,8 @@ namespace V2UnityDiscordIntercept
 
         private void CreateDiscoveryResponse(NetIncomingMessage msg)
         {
+            Logger.Log("Creating discovery response.");
+
             // Create a response and write some example data to it
             NetOutgoingMessage response = server.CreateMessage();
             response.Write(_lobbyName);
@@ -141,13 +145,14 @@ namespace V2UnityDiscordIntercept
 
         public void DeleteLobby()
         {
+            Logger.Log("Deleting the lobby");
             server.Shutdown("The server is shutting down.");
             server = null;
         }
 
         public void SendNetworkMessage(byte channelId, byte[] data)
         {
-            if(!Peer.Connections.Any())
+            if (!Peer.Connections.Any())
                 return;
 
             var msg = Peer.CreateMessage();
@@ -171,32 +176,40 @@ namespace V2UnityDiscordIntercept
         private static void StatusChanged(NetIncomingMessage msg)
         {
             var newStatus = (NetConnectionStatus)msg.ReadByte();
-            Console.WriteLine($"StatusChanged: {newStatus} - {msg.ReadString()}");
+            Logger.Log($"StatusChanged: {newStatus} - {msg.ReadString()}");
 
             switch (newStatus)
             {
                 case NetConnectionStatus.Connected:
-                    Demo.instance.JoinLobby(msg.SenderConnection.RemoteUniqueIdentifier, null);
+                    Demo.instance.JoinLobby(0L, null);
                     break;
             }
         }
 
         private static void ConnectionApproval(NetIncomingMessage msg)
         {
+            Logger.Log($"Connection approval requested from {msg.SenderConnection.RemoteUniqueIdentifier}");
             msg.SenderConnection.Approve();
         }
 
         private void Data(NetIncomingMessage msg)
         {
-            var channelId = msg.SequenceChannel;
+            try
+            {
+                var channelId = msg.SequenceChannel;
 
-            if (channelId == 0)
-            {
-                HandleTCPData(msg.Data, msg.SenderConnection.RemoteUniqueIdentifier);
+                if (channelId == 0)
+                {
+                    HandleTCPData(msg.Data, msg.SenderConnection.RemoteUniqueIdentifier);
+                }
+                if (channelId == 1 && msg.Data.Length >= 4)
+                {
+                    HandleUDPData(msg.Data, msg.SenderConnection.RemoteUniqueIdentifier);
+                }
             }
-            if (channelId == 1 && msg.Data.Length >= 4)
+            catch (Exception e)
             {
-                HandleUDPData(msg.Data, msg.SenderConnection.RemoteUniqueIdentifier);
+                Logger.Log(e.ToString());
             }
         }
 
@@ -244,7 +257,7 @@ namespace V2UnityDiscordIntercept
                 }
                 catch
                 {
-                    Console.WriteLine("Failed to parse packet " + string.Join("-", packet.ToArray()));
+                    Logger.Log("Failed to parse packet " + string.Join("-", packet.ToArray()));
                 }
             }
             using (Packet packet2 = new Packet(_data))
@@ -252,7 +265,7 @@ namespace V2UnityDiscordIntercept
                 int key = packet2.ReadInt(true);
                 if (!packetHandlers.TryGetValue(key, out PacketHandler handler))
                 {
-                    Console.WriteLine("Could not find handler for key " + key);
+                    Logger.Log("Could not find handler for key " + key);
                     return;
                 }
 
