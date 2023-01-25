@@ -5,7 +5,7 @@ using V2UnityDiscordIntercept.Patches;
 
 namespace V2UnityDiscordIntercept
 {
-    [BepInPlugin("c1b6540e-a6ed-4f10-89b3-8e715ee70a78", "V2Unity Discord Intercept", "0.0.5-alpha")]
+    [BepInPlugin("c1b6540e-a6ed-4f10-89b3-8e715ee70a78", "V2Unity Discord Intercept", "0.0.6-alpha")]
     public class Plugin : BaseUnityPlugin
     {
         public const string AppIdentifier = "V2Unity-Discord-Patch";
