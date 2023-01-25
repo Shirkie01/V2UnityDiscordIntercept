@@ -11,7 +11,8 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool SendNetworkMessageToUser(long userId, byte channelId, byte[] data)
         {
-            Plugin.Network.SendNetworkMessageToUser(userId, channelId, data);
+            Logger.Log($"Sending network message to user: {userId}");
+            Plugin.Client.SendNetworkMessageToUser(userId, channelId, data);
             return false;
         }
     }

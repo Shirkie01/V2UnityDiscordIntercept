@@ -3,6 +3,7 @@ using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UnityEngine;
 
 namespace V2UnityDiscordIntercept.Patches
 {
@@ -11,7 +12,17 @@ namespace V2UnityDiscordIntercept.Patches
     {
         [HarmonyPrefix]
         public static bool LeaveLobby(Demo __instance, long lobbyId)
-        {            
+        {
+            Logger.Log("Leaving lobby");
+
+            foreach (var player in __instance.playerText.Keys)
+            {
+                if (GameManager.instance.inDebug)
+                {
+                    GameObject.Destroy(__instance.playerText[player].gameObject);
+                }
+            }
+
             __instance.playerText.Clear();
             __instance.playerNames.Clear();
             __instance.playerReady.Clear();

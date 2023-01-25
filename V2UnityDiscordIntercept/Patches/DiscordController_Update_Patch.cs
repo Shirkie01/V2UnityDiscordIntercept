@@ -10,8 +10,7 @@ namespace V2UnityDiscordIntercept.Patches
     {
         [HarmonyPrefix]
         public static bool Update()
-        {
-            Plugin.Network.Update();
+        {            
             return false;
         }
     }

@@ -10,10 +10,10 @@ namespace V2UnityDiscordIntercept.Patches
         {
             using (Packet packet = new Packet((int)ClientPackets.welcome))
             {
-                packet.Write(Plugin.Network.Username);
+                packet.Write(Plugin.Username);
                 packet.Write(GameManager.instance.ready);
                 packet.Write(GameManager.instance.vehicles[0]);
-                Plugin.Network.SendTCPData(packet, userId);
+                Plugin.Client.SendTCPData(packet, userId);
             }
             return false;
         }

@@ -9,7 +9,7 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool OnApplicationQuit()
         {
-            Console.WriteLine("DiscordController.OnApplicationQuit");
+            Logger.Log("DiscordController.OnApplicationQuit");
             return false;
         }
     }

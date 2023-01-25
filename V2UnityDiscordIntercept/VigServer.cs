@@ -1,0 +1,176 @@
+﻿using Lidgren.Network;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace V2UnityDiscordIntercept
+{
+    public class VigServer : Network
+    {
+        public override NetPeer Peer => server;
+        public int Port { get; }
+        private NetServer server;
+
+        public VigServer(int port)
+        {
+            Port = port;
+        }
+
+        public void CreateLobby()
+        {
+            // Close the window if we got it open somehow.
+            Plugin.ShowConnectionWindow = false;
+
+            var config = new NetPeerConfiguration(Plugin.AppIdentifier)
+            {
+                Port = Port
+            };
+            config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
+            config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
+            config.EnableMessageType(NetIncomingMessageType.StatusChanged);
+
+            server = new NetServer(config);
+            server.Start();
+            Logger.Log($"Created server with id: {server.UniqueIdentifier}");
+        }
+
+        private void CreateDiscoveryResponse(NetIncomingMessage msg)
+        {
+            Logger.Log("Creating discovery response.");
+
+            // Create a response and write some example data to it
+            NetOutgoingMessage response = server.CreateMessage();
+            response.Write($"Found server running on port:{server.Port}");
+
+            // Send the response to the sender of the request
+            server.SendDiscoveryResponse(response, msg.SenderEndPoint);
+        }
+
+        public void DeleteLobby()
+        {
+            Logger.Log("Deleting the lobby");
+            server.Shutdown("The server is shutting down.");
+            server = null;
+        }
+
+        private static void ConnectionApproval(NetIncomingMessage msg)
+        {
+            Logger.Log($"Connection approval requested from {msg.SenderConnection.RemoteUniqueIdentifier}");
+            msg.SenderConnection.Approve();
+        }
+
+        public override void ReadMessages()
+        {
+            NetIncomingMessage msg;
+            while ((msg = Peer.ReadMessage()) != null)
+            {
+                switch (msg.MessageType)
+                {
+                    case NetIncomingMessageType.DiscoveryRequest:
+                        CreateDiscoveryResponse(msg);
+                        break;
+                    case NetIncomingMessageType.VerboseDebugMessage:
+                    case NetIncomingMessageType.DebugMessage:
+                    case NetIncomingMessageType.WarningMessage:
+                    case NetIncomingMessageType.ErrorMessage:
+                        Logger.Log(msg.ReadString());
+                        break;
+
+                    case NetIncomingMessageType.ConnectionApproval:
+                        ConnectionApproval(msg);
+                        break;
+
+                    case NetIncomingMessageType.StatusChanged:
+                        StatusChanged(msg);
+                        break;
+
+                    case NetIncomingMessageType.Data:
+                        Data(msg);
+                        break;
+
+                    default:
+                        Logger.Log("Unhandled type: " + msg.MessageType + "\n" + msg.ToString());
+                        break;
+                }
+                Peer.Recycle(msg);
+            }
+        }
+
+        private void Data(NetIncomingMessage msg)
+        {
+            long fromUserId = 0L;
+            long toUserId = 0L;
+
+            try
+            {
+                // We got some data. It needs to either be relayed to a specific user,
+                // or relayed to everybody. We recreate the message excluding the target user id,
+                // as the target user id is specifically for the server to know where to send the data.
+                fromUserId = GetUserIdFromNetworkMessage(msg, 0);
+                toUserId = GetUserIdFromNetworkMessage(msg, 8);
+
+                // We recreate the message excluding the target user id.
+                var relayMsg = server.CreateMessage();
+
+                relayMsg.Write(fromUserId);
+
+                // Since we are manually writing the fromUserId, we take away both the originator and target user ids
+                // from the data, and then write the new data without those, as the fromUserId is already included
+                // and we don't care about sending the targetUserId to the clients.
+                var relayData = new byte[msg.Data.Length - 16];
+                Array.Copy(msg.Data, 16, relayData, 0, relayData.Length);
+                relayMsg.Write(relayData);
+
+                var channelId = msg.SequenceChannel;
+
+                bool includeSenderInResponse = false;
+                if (includeSenderInResponse)
+                {
+                    // Relay message to all
+                    if (toUserId == 0L)
+                    {
+                        server.SendMessage(relayMsg, server.Connections, GetDeliveryMethod(channelId), channelId);
+                        return;
+                    }
+                }
+                else
+                {
+                    // Relay the message to all excluding sender
+                    if (toUserId == 0L && server.Connections.Any(c => c.RemoteUniqueIdentifier != fromUserId))
+                    {
+                        server.SendMessage(relayMsg, server.Connections.Where(c => c.RemoteUniqueIdentifier != fromUserId).ToList(), GetDeliveryMethod(channelId), channelId);
+                        return;
+                    }
+                }
+
+                var targetConnection = server.Connections.FirstOrDefault(c => c.RemoteUniqueIdentifier == toUserId);
+                if (targetConnection == null)
+                {
+                    Logger.Log($"Unable to find connection with id: {toUserId}");
+                    return;
+                }
+
+                server.SendMessage(relayMsg, targetConnection, GetDeliveryMethod(channelId), channelId);
+            }
+            catch (Exception e)
+            {
+                Logger.Log(e.ToString() + $"{fromUserId} :" + string.Join(",", msg.Data));
+            }
+        }
+
+        private long GetUserIdFromNetworkMessage(NetIncomingMessage msg, int srcOffset)
+        {
+            byte[] userIdBytes = new byte[8];
+            Array.Copy(msg.Data, srcOffset, userIdBytes, 0, 8);
+            var fromUserId = BitConverter.ToInt64(userIdBytes);
+            return fromUserId;
+        }
+
+        private void StatusChanged(NetIncomingMessage msg)
+        {
+            var newStatus = (NetConnectionStatus)msg.ReadByte();
+            Logger.Log($"StatusChanged: {newStatus} - {msg.ReadString()}");            
+        }
+    }
+}

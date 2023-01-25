@@ -11,10 +11,12 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool DisconnectNetwork2()
         {
+            Logger.Log("Disconnecting network");
+
             Demo.instance.LeaveLobby(0L);
 
-            if (Plugin.Network.IsServer)
-                Plugin.Network.DeleteLobby();
+            if (DiscordController.IsOwner())
+                Plugin.Server.DeleteLobby();
 
             return false;
         }
