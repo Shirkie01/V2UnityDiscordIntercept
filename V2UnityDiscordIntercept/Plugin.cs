@@ -8,10 +8,13 @@ namespace V2UnityDiscordIntercept
     [BepInPlugin("c1b6540e-a6ed-4f10-89b3-8e715ee70a78", "V2Unity Discord Intercept", "0.0.5-alpha")]
     public class Plugin : BaseUnityPlugin
     {
+        public const string AppIdentifier = "V2Unity-Discord-Patch";
         private Rect windowRect = new Rect(100, 100, 300, 180);
         private string ipAddress = "localhost";
-
-        internal static Network Network = new Network();
+        public static int Port { get; set; } = 14697;
+        public static string Username = "Player";        
+        public static VigServer Server { get; set; }
+        public static VigClient Client { get; set; }
 
         private bool ShowConnectionWindow
         {
@@ -36,15 +39,15 @@ namespace V2UnityDiscordIntercept
         private void ConnectionWindow(int windowId)
         {
             GUILayout.Label("Username");
-            Network.Username = GUILayout.TextField(Network.Username);
+            Username = GUILayout.TextField(Username);
 
             GUILayout.Label("IP Address");
             ipAddress = GUILayout.TextField(ipAddress);
 
             GUILayout.Label("Port");
-            if (int.TryParse(GUILayout.TextField(Network.Port.ToString()), out int newPort))
+            if (int.TryParse(GUILayout.TextField(Port.ToString()), out int newPort))
             {
-                Network.Port = newPort;
+                Port = newPort;
             }
 
             using (new GUILayout.HorizontalScope())
@@ -52,12 +55,39 @@ namespace V2UnityDiscordIntercept
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("Connect"))
                 {
-                    Network.ConnectToLobby(ipAddress, Network.Port);
+                    Client = new VigClient();
+                    Client.ConnectToLobby(ipAddress, Port);
                     ShowConnectionWindow = false;
                 }
             }
 
             GUI.DragWindow();
+        }
+
+        public void Update()
+        {
+            if(Server != null)
+            {
+                Server.Update();
+            }
+
+            if(Client != null)
+            {
+                Client.Update();
+            }
+        }
+
+        public void LateUpdate()
+        {
+            if(Server != null)
+            {
+                Server.LateUpdate();
+            }
+
+            if(Client != null)
+            {
+                Client.LateUpdate();
+            }
         }
     }
 }

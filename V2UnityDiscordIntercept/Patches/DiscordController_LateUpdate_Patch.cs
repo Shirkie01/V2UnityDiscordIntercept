@@ -10,8 +10,7 @@ namespace V2UnityDiscordIntercept.Patches
     {
         [HarmonyPrefix]
         public static bool LateUpdate()
-        {
-            Plugin.Network.LateUpdate();
+        {            
             return false;
         }
     }

@@ -15,7 +15,7 @@ namespace V2UnityDiscordIntercept.Patches
             Logger.Log("Setting lobby owner");
 
             var field = __instance.GetType().GetField("lobbyOwner", BindingFlags.NonPublic | BindingFlags.Instance);
-            field.SetValue(__instance, Plugin.Network.Peer.UniqueIdentifier == userId);
+            field.SetValue(__instance, Plugin.Client.Peer.UniqueIdentifier == userId);            
             return false;
         }
     }

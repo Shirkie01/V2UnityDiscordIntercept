@@ -12,7 +12,7 @@ namespace V2UnityDiscordIntercept.Patches
         public static bool DeleteLobby()
         {
             Logger.Log("Deleting lobby");
-            Plugin.Network.DeleteLobby();
+            Plugin.Server.DeleteLobby();
             return false;
         }
     }

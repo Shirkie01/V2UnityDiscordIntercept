@@ -8,7 +8,7 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool SetLobbyMetadata(string key, string value)
         {
-            Plugin.Network.SetLobbyMetadata(key, value);
+            Plugin.Client.SetLobbyMetadata(key, value);
             return false;
         }
     }

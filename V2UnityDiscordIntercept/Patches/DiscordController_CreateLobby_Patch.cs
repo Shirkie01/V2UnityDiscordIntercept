@@ -10,9 +10,15 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool CreateLobby(string lobbyName)
         {
-            Plugin.Network.Username = lobbyName;
-            Logger.Log("Creating lobby");
-            Plugin.Network.CreateLobby(lobbyName);
+            Plugin.Username = lobbyName;
+            var server = new VigServer(Plugin.Port);
+            server.CreateLobby();
+            Plugin.Server = server;
+
+
+            Plugin.Client = new VigClient();
+            Plugin.Client.ConnectToLobby("localhost", Plugin.Port);
+            DiscordController.instance.SetLobbyOwner(Plugin.Client.Peer.UniqueIdentifier);
             return false;
         }
     }

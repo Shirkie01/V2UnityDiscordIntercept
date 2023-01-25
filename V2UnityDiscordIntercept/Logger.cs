@@ -18,7 +18,7 @@ namespace V2UnityDiscordIntercept
         private static void LogToFile(string message)
         {
             Directory.CreateDirectory("Logs");
-            File.AppendAllText($"Logs/{Plugin.Network.Username}.txt", message);
+            File.AppendAllText($"Logs/{Plugin.Username}.txt", message);
         }
     }
 }

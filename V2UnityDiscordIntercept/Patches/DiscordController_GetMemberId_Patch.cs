@@ -11,7 +11,7 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool GetMemberId(ref int __result)
         {
-            __result = Plugin.Network.GetMemberId();
+            __result = Plugin.Client.MemberId;
             Logger.Log("Got member id: " + __result);
             return false;
         }

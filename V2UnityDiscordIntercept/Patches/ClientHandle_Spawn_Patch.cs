@@ -11,7 +11,7 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static void Spawn(Packet _packet, long userId)
         {
-
+            Logger.Log($"Spawn {userId}");
         }
     }
 }

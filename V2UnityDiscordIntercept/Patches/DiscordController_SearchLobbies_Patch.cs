@@ -11,8 +11,8 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool SearchLobbies()
         {
-            Logger.Log("DiscordController.SearchLobbies");
             // This prevents the original SearchLobbies code from running.
+            // Since we are using the GUI to connect, we don't want anything here.
             return false;
         }
     }
