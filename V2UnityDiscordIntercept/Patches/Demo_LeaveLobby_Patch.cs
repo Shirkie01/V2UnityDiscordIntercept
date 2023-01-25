@@ -12,6 +12,8 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool LeaveLobby(Demo __instance, long lobbyId)
         {            
+            Logger.Log("Leaving lobby");
+
             __instance.playerText.Clear();
             __instance.playerNames.Clear();
             __instance.playerReady.Clear();

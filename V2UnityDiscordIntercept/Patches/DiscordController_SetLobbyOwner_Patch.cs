@@ -12,6 +12,8 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool SetLobbyOwner(DiscordController __instance, long userId)
         {
+            Logger.Log("Setting lobby owner");
+
             var field = __instance.GetType().GetField("lobbyOwner", BindingFlags.NonPublic | BindingFlags.Instance);
             field.SetValue(__instance, Plugin.Network.Peer.UniqueIdentifier == userId);
             return false;

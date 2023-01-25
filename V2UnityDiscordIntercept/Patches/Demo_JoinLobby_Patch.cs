@@ -11,6 +11,8 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool JoinLobby(Demo __instance, long lobbyId, string secret)
         {
+            Logger.Log("Joining lobby");
+
             if (Plugin.Network.IsServer)
                 return false;
 

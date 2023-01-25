@@ -11,6 +11,7 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool DeleteLobby()
         {
+            Logger.Log("Deleting lobby");
             Plugin.Network.DeleteLobby();
             return false;
         }

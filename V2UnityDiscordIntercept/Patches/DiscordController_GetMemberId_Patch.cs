@@ -12,6 +12,7 @@ namespace V2UnityDiscordIntercept.Patches
         public static bool GetMemberId(ref int __result)
         {
             __result = Plugin.Network.GetMemberId();
+            Logger.Log("Got member id: " + __result);
             return false;
         }
     }

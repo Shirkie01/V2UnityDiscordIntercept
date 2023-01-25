@@ -10,6 +10,8 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool CreateLobby(string lobbyName)
         {
+            Plugin.Network.Username = lobbyName;
+            Logger.Log("Creating lobby");
             Plugin.Network.CreateLobby(lobbyName);
             return false;
         }

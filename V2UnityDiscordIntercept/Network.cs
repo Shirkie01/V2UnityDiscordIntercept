@@ -26,10 +26,21 @@ namespace V2UnityDiscordIntercept
 
         private int memberId;
 
+        public bool IsLobbyOwner;
+
+        private void AddSelf(long userId)
+        {
+            GameManager.instance.networkMembers.Add(userId, null);
+            Demo.instance.playerReady.Add(userId, false);
+            Demo.instance.playerNames.Add(userId, Username);
+            Demo.instance.playerVehicles.Add(userId, 0);
+            Demo.instance.InstantiateText(userId);
+        }
+
         public void CreateLobby(string lobbyName)
         {
             if (server == null)
-            {                
+            {
                 _lobbyName = lobbyName;
                 Username = lobbyName;
                 var config = new NetPeerConfiguration(appIdentifier)
@@ -45,13 +56,15 @@ namespace V2UnityDiscordIntercept
                 server.Start();
                 Logger.Log($"Started server with name {_lobbyName} and id: {server.UniqueIdentifier}.");
 
-                DiscordController.instance.SetLobbyOwner(Peer.UniqueIdentifier);                
+                InitializePacketHandlers();
 
-                InitializePacketHandlers();                
+                DiscordController.instance.SetLobbyOwner(server.UniqueIdentifier);
+                IsLobbyOwner = true;
+                var connection = ConnectToLobby("localhost", Port);
             }
         }
 
-        public void ConnectToLobby(string ipAddress, int port)
+        public NetConnection ConnectToLobby(string ipAddress, int port)
         {
             Logger.Log($"Connecting to server at {ipAddress}:{port}");
             Port = port;
@@ -63,7 +76,9 @@ namespace V2UnityDiscordIntercept
             client.Start();
             var netConnection = client.Connect(ipAddress, port);
             Logger.Log($"Created connection with id: {client.UniqueIdentifier}");
-            memberId = client.ConnectionsCount - 1;
+            memberId = netConnection.Peer.ConnectionsCount;            
+            AddSelf(netConnection.Peer.UniqueIdentifier);
+            return netConnection;
         }
 
         public void JoinLobby(long lobbyId, string secret)
@@ -152,23 +167,24 @@ namespace V2UnityDiscordIntercept
 
         public void SendNetworkMessage(byte channelId, byte[] data)
         {
-            if (!Peer.Connections.Any())
+            var connections = IsServer ? server.Connections : client.ServerConnection.Peer.Connections;
+            if (!connections.Any())
+            {
                 return;
-
+            }
             var msg = Peer.CreateMessage();
             msg.Write(data);
-
-            Peer.SendMessage(msg, Peer.Connections, channelId == 0 ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.UnreliableSequenced, channelId);
+            Peer.SendMessage(msg, connections, channelId == 0 ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.UnreliableSequenced, channelId);
         }
 
         public void SendNetworkMessageToUser(long userId, byte channelId, byte[] data)
         {
-            var msg = Peer.CreateMessage();
-            msg.Write(data);
-
-            var connection = Peer.Connections.FirstOrDefault(c => c.RemoteUniqueIdentifier == userId);
+            var connections = IsServer ? server.Connections : client.ServerConnection.Peer.Connections;
+            var connection = connections.FirstOrDefault(c => c.RemoteUniqueIdentifier == userId);
             if (connection != null)
             {
+                var msg = Peer.CreateMessage();
+                msg.Write(data);
                 Peer.SendMessage(msg, connection, channelId == 0 ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.UnreliableSequenced, channelId);
             }
         }
