@@ -25,22 +25,12 @@ namespace V2UnityDiscordIntercept
             client.Start();
             var netConnection = client.Connect(ipAddress, port);
             Logger.Log($"Created connection with id: {client.UniqueIdentifier}");
-            AddSelf(netConnection.Peer.UniqueIdentifier);
-        }
-
-        private void AddSelf(long userId)
-        {
-            GameManager.instance.networkMembers.Add(userId, null);
-            Demo.instance.playerReady.Add(userId, false);
-            Demo.instance.playerNames.Add(userId, Plugin.Username);
-            Demo.instance.playerVehicles.Add(userId, 0);
-            Demo.instance.InstantiateText(userId);
         }
 
         public void JoinLobby(long lobbyId, string secret)
         {
-            Logger.Log($"Network.JoinLobby({lobbyId}, {secret})");
             MemberId = client.ServerConnection.Peer.ConnectionsCount - 1;
+            Logger.Log($"Joined Lobby and received Member Id: {MemberId}");
             InitializePacketHandlers();
             ClientSend.Joined();
         }
@@ -111,12 +101,14 @@ namespace V2UnityDiscordIntercept
         private void Data(NetIncomingMessage msg)
         {
             // Gets the actual originator user id
-            var fromUserId = GetUserIdFromNetworkMessage(msg);
-
+            long fromUserId = 0L;
+            byte[] data = new byte[0];
             try
             {
-                var data = new byte[msg.Data.Length - 8];
-                Buffer.BlockCopy(msg.Data, 7, data, 0, data.Length);
+                fromUserId = GetUserIdFromNetworkMessage(msg);
+
+                data = new byte[msg.Data.Length - 8];
+                Array.Copy(msg.Data, 8, data, 0, data.Length);
                 var channelId = msg.SequenceChannel;
 
                 if (channelId == 0)
@@ -130,15 +122,14 @@ namespace V2UnityDiscordIntercept
             }
             catch (Exception e)
             {
-                Logger.Log($"{fromUserId} :" + string.Join(",", msg.Data));
-                Logger.Log(e.ToString());
+                Logger.Log(e.ToString() + "\r\n" + $"{fromUserId}\r\n" + string.Join(",", msg.Data) + "\r\n" + string.Join(",", data) + $"\r\ndata.Length: {data.Length}");
             }
         }
 
         private long GetUserIdFromNetworkMessage(NetIncomingMessage msg)
         {
             byte[] userIdBytes = new byte[8];
-            Buffer.BlockCopy(msg.Data, 0, userIdBytes, 0, 8);
+            Array.Copy(msg.Data, 0, userIdBytes, 0, 8);
             var fromUserId = BitConverter.ToInt64(userIdBytes);
             return fromUserId;
         }
@@ -161,6 +152,7 @@ namespace V2UnityDiscordIntercept
                 using (Packet packet = new Packet(receivedData.ReadBytes(num, true)))
                 {
                     int key = packet.ReadInt(true);
+                    Logger.Log($"Got packet with key: {(ClientPackets)key}");
                     packetHandlers[key](packet, userId);
                 }
                 num = 0;

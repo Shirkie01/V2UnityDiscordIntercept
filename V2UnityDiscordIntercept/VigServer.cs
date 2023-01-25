@@ -19,6 +19,9 @@ namespace V2UnityDiscordIntercept
 
         public void CreateLobby()
         {
+            // Close the window if we got it open somehow.
+            Plugin.ShowConnectionWindow = false;
+
             var config = new NetPeerConfiguration(Plugin.AppIdentifier)
             {
                 Port = Port
@@ -78,6 +81,10 @@ namespace V2UnityDiscordIntercept
                         ConnectionApproval(msg);
                         break;
 
+                    case NetIncomingMessageType.StatusChanged:
+                        StatusChanged(msg);
+                        break;
+
                     case NetIncomingMessageType.Data:
                         Data(msg);
                         break;
@@ -112,17 +119,29 @@ namespace V2UnityDiscordIntercept
                 // from the data, and then write the new data without those, as the fromUserId is already included
                 // and we don't care about sending the targetUserId to the clients.
                 var relayData = new byte[msg.Data.Length - 16];
-                Buffer.BlockCopy(msg.Data, 16, relayData, 0, relayData.Length);
+                Array.Copy(msg.Data, 16, relayData, 0, relayData.Length);
                 relayMsg.Write(relayData);
 
                 var channelId = msg.SequenceChannel;
 
-                // Relay the message to all
-                if (toUserId == 0L)
+                bool includeSenderInResponse = false;
+                if (includeSenderInResponse)
                 {
-                    //server.SendMessage(relayMsg, server.Connections.Where(c => c.RemoteUniqueIdentifier != fromUserId).ToList(), GetDeliveryMethod(channelId), channelId);
-                    server.SendMessage(relayMsg, server.Connections.ToList(), GetDeliveryMethod(channelId), channelId);
-                    return;
+                    // Relay message to all
+                    if (toUserId == 0L)
+                    {
+                        server.SendMessage(relayMsg, server.Connections, GetDeliveryMethod(channelId), channelId);
+                        return;
+                    }
+                }
+                else
+                {
+                    // Relay the message to all excluding sender
+                    if (toUserId == 0L && server.Connections.Any(c => c.RemoteUniqueIdentifier != fromUserId))
+                    {
+                        server.SendMessage(relayMsg, server.Connections.Where(c => c.RemoteUniqueIdentifier != fromUserId).ToList(), GetDeliveryMethod(channelId), channelId);
+                        return;
+                    }
                 }
 
                 var targetConnection = server.Connections.FirstOrDefault(c => c.RemoteUniqueIdentifier == toUserId);
@@ -136,17 +155,22 @@ namespace V2UnityDiscordIntercept
             }
             catch (Exception e)
             {
-                Logger.Log($"{fromUserId} :" + string.Join(",", msg.Data));
-                Logger.Log(e.ToString());
+                Logger.Log(e.ToString() + $"{fromUserId} :" + string.Join(",", msg.Data));
             }
         }
 
         private long GetUserIdFromNetworkMessage(NetIncomingMessage msg, int srcOffset)
         {
             byte[] userIdBytes = new byte[8];
-            Buffer.BlockCopy(msg.Data, srcOffset, userIdBytes, 0, 8);
+            Array.Copy(msg.Data, srcOffset, userIdBytes, 0, 8);
             var fromUserId = BitConverter.ToInt64(userIdBytes);
             return fromUserId;
+        }
+
+        private void StatusChanged(NetIncomingMessage msg)
+        {
+            var newStatus = (NetConnectionStatus)msg.ReadByte();
+            Logger.Log($"StatusChanged: {newStatus} - {msg.ReadString()}");            
         }
     }
 }

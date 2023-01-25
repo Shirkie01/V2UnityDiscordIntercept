@@ -12,15 +12,11 @@ namespace V2UnityDiscordIntercept
         private Rect windowRect = new Rect(100, 100, 300, 180);
         private string ipAddress = "localhost";
         public static int Port { get; set; } = 14697;
-        public static string Username = "Player";        
+        public static string Username = "Player";
         public static VigServer Server { get; set; }
         public static VigClient Client { get; set; }
 
-        private bool ShowConnectionWindow
-        {
-            get => Demo_GetLobbies_Patch.ShowConnectionWindow;
-            set => Demo_GetLobbies_Patch.ShowConnectionWindow = value;
-        }
+        public static bool ShowConnectionWindow { get; set; }
 
         private void Awake()
         {
@@ -52,6 +48,11 @@ namespace V2UnityDiscordIntercept
 
             using (new GUILayout.HorizontalScope())
             {
+                if (GUILayout.Button("Close"))
+                {
+                    ShowConnectionWindow = false;
+                }
+
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("Connect"))
                 {
@@ -66,27 +67,27 @@ namespace V2UnityDiscordIntercept
 
         public void Update()
         {
-            if(Server != null)
-            {
-                Server.Update();
-            }
-
-            if(Client != null)
+            if (Client != null)
             {
                 Client.Update();
+            }
+
+            if (Server != null)
+            {
+                Server.Update();
             }
         }
 
         public void LateUpdate()
         {
-            if(Server != null)
-            {
-                Server.LateUpdate();
-            }
-
-            if(Client != null)
+            if (Client != null)
             {
                 Client.LateUpdate();
+            }
+
+            if (Server != null)
+            {
+                Server.LateUpdate();
             }
         }
     }
