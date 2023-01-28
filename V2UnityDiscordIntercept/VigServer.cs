@@ -124,34 +124,23 @@ namespace V2UnityDiscordIntercept
 
                 var channelId = msg.SequenceChannel;
 
-                bool includeSenderInResponse = false;
-                if (includeSenderInResponse)
+                // Relay the message to all excluding sender
+                if (toUserId == 0L && server.Connections.Any(c => c.RemoteUniqueIdentifier != fromUserId))
                 {
-                    // Relay message to all
-                    if (toUserId == 0L)
+                    server.SendMessage(relayMsg, server.Connections.Where(c => c.RemoteUniqueIdentifier != fromUserId).ToList(), GetDeliveryMethod(channelId), channelId);
+                }
+                // Send to target user
+                else if (toUserId != 0L)
+                {
+                    var targetConnection = server.Connections.FirstOrDefault(c => c.RemoteUniqueIdentifier == toUserId);
+                    if (targetConnection == null)
                     {
-                        server.SendMessage(relayMsg, server.Connections, GetDeliveryMethod(channelId), channelId);
+                        Logger.Log($"Unable to find connection with id: {toUserId}");
                         return;
                     }
-                }
-                else
-                {
-                    // Relay the message to all excluding sender
-                    if (toUserId == 0L && server.Connections.Any(c => c.RemoteUniqueIdentifier != fromUserId))
-                    {
-                        server.SendMessage(relayMsg, server.Connections.Where(c => c.RemoteUniqueIdentifier != fromUserId).ToList(), GetDeliveryMethod(channelId), channelId);
-                        return;
-                    }
+                    server.SendMessage(relayMsg, targetConnection, GetDeliveryMethod(channelId), channelId);
                 }
 
-                var targetConnection = server.Connections.FirstOrDefault(c => c.RemoteUniqueIdentifier == toUserId);
-                if (targetConnection == null)
-                {
-                    Logger.Log($"Unable to find connection with id: {toUserId}");
-                    return;
-                }
-
-                server.SendMessage(relayMsg, targetConnection, GetDeliveryMethod(channelId), channelId);
             }
             catch (Exception e)
             {
@@ -170,7 +159,7 @@ namespace V2UnityDiscordIntercept
         private void StatusChanged(NetIncomingMessage msg)
         {
             var newStatus = (NetConnectionStatus)msg.ReadByte();
-            Logger.Log($"StatusChanged: {newStatus} - {msg.ReadString()}");            
+            Logger.Log($"StatusChanged: {newStatus} - {msg.ReadString()}");
         }
     }
 }
