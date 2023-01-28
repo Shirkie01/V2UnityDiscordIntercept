@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Lidgren.Network;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,6 +15,8 @@ namespace V2UnityDiscordIntercept.Patches
             Logger.Log("Disconnecting network");
 
             Demo.instance.LeaveLobby(0L);
+
+            Plugin.Client.Disconnect(Plugin.Username + " has disconnected.");
 
             if (DiscordController.IsOwner())
                 Plugin.Server.DeleteLobby();

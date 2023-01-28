@@ -7,9 +7,10 @@ namespace V2UnityDiscordIntercept.Patches
     internal class DiscordController_OnApplicationQuit_Patch
     {
         [HarmonyPrefix]
-        public static bool OnApplicationQuit()
+        public static bool OnApplicationQuit(DiscordController __instance)
         {
             Logger.Log("DiscordController.OnApplicationQuit");
+            __instance.DisconnectNetwork2();
             return false;
         }
     }

@@ -1,8 +1,10 @@
-﻿using Lidgren.Network;
+﻿using Discord;
+using Lidgren.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace V2UnityDiscordIntercept
 {
@@ -14,6 +16,24 @@ namespace V2UnityDiscordIntercept
         public int MemberId { get; set; }
 
         private Dictionary<string, string> lobbyMetadata = new Dictionary<string, string>();
+
+        public void Disconnect(string byeMessage)
+        {
+            client.ServerConnection.Disconnect(byeMessage);
+        }
+
+        private void HandleMemberDisconnected(Packet _packet, long userId)
+        {            
+            if (GameManager.instance.inDebug)
+            {
+                Demo.instance.MemberLeft(userId);
+                return;
+            }
+            GameObject.Destroy(GameManager.instance.networkMembers[userId].unit);
+            GameManager.instance.FUN_309A0(GameManager.instance.networkMembers[userId]);
+            GameManager.instance.networkMembers.Remove(userId);
+            GameManager.instance.networkIds.Remove(userId);
+        }
 
         public void ConnectToLobby(string ipAddress, int port)
         {
@@ -81,7 +101,8 @@ namespace V2UnityDiscordIntercept
                 {40, new PacketHandler(ClientHandle.TotaledAI)},
                 {41, new PacketHandler(ClientHandle.DropWeaponAI)},
                 {42, new PacketHandler(ClientHandle.Pause)},
-                {43, new PacketHandler(HandleLobbyMetadata) }
+                {43, new PacketHandler(HandleLobbyMetadata) },
+                {44, new PacketHandler(HandleMemberDisconnected) }
             };
         }
 
@@ -94,6 +115,9 @@ namespace V2UnityDiscordIntercept
             {
                 case NetConnectionStatus.Connected:
                     Demo.instance.JoinLobby(0L, null);
+                    break;
+                case NetConnectionStatus.Disconnected:
+                    GameManager.instance.LoadDebug();
                     break;
             }
         }
