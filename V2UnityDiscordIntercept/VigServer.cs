@@ -54,10 +54,14 @@ namespace V2UnityDiscordIntercept
             server = null;
         }
 
-        private static void ConnectionApproval(NetIncomingMessage msg)
+        private void ConnectionApproval(NetIncomingMessage msg)
         {
             Logger.Log($"Connection approval requested from {msg.SenderConnection.RemoteUniqueIdentifier}");
-            msg.SenderConnection.Approve();
+            
+            // Provide the new client with a member id.
+            var hail = server.CreateMessage();
+            hail.Write(server.ConnectionsCount);
+            msg.SenderConnection.Approve(hail);
         }
 
         public override void ReadMessages()

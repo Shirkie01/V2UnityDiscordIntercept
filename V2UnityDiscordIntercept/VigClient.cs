@@ -23,7 +23,7 @@ namespace V2UnityDiscordIntercept
         }
 
         private void HandleMemberDisconnected(Packet _packet, long userId)
-        {            
+        {
             if (GameManager.instance.inDebug)
             {
                 Demo.instance.MemberLeft(userId);
@@ -49,8 +49,9 @@ namespace V2UnityDiscordIntercept
 
         public void JoinLobby(long lobbyId, string secret)
         {
-            MemberId = client.ServerConnection.Peer.ConnectionsCount - 1;
-            Logger.Log($"Joined Lobby and received Member Id: {MemberId}");
+            Logger.Log($"Joined Lobby");
+            // Add self to the user list
+            Demo.instance.InstantiateText(client.UniqueIdentifier);
             InitializePacketHandlers();
             ClientSend.Joined();
         }
@@ -106,7 +107,7 @@ namespace V2UnityDiscordIntercept
             };
         }
 
-        private static void StatusChanged(NetIncomingMessage msg)
+        private void StatusChanged(NetIncomingMessage msg)
         {
             var newStatus = (NetConnectionStatus)msg.ReadByte();
             Logger.Log($"StatusChanged: {newStatus} - {msg.ReadString()}");
@@ -114,6 +115,8 @@ namespace V2UnityDiscordIntercept
             switch (newStatus)
             {
                 case NetConnectionStatus.Connected:
+                    MemberId = msg.SenderConnection.RemoteHailMessage.ReadInt32();
+                    Logger.Log($"MemberId: {MemberId}");
                     Demo.instance.JoinLobby(0L, null);
                     break;
                 case NetConnectionStatus.Disconnected:
@@ -145,7 +148,7 @@ namespace V2UnityDiscordIntercept
                 }
             }
             catch (Exception e)
-            {
+            {                
                 Logger.Log(e.ToString() + "\r\n" + $"{fromUserId}\r\n" + string.Join(",", msg.Data) + "\r\n" + string.Join(",", data) + $"\r\ndata.Length: {data.Length}");
             }
         }
@@ -175,8 +178,7 @@ namespace V2UnityDiscordIntercept
             {
                 using (Packet packet = new Packet(receivedData.ReadBytes(num, true)))
                 {
-                    int key = packet.ReadInt(true);
-                    Logger.Log($"Got packet with key: {(ClientPackets)key}");
+                    int key = packet.ReadInt(true);                    
                     packetHandlers[key](packet, userId);
                 }
                 num = 0;
