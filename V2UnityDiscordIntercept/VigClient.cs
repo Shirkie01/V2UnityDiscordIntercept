@@ -49,9 +49,7 @@ namespace V2UnityDiscordIntercept
 
         public void JoinLobby(long lobbyId, string secret)
         {
-            Logger.Log($"Joined Lobby");
-            // Add self to the user list
-            Demo.instance.InstantiateText(client.UniqueIdentifier);
+            Logger.Log($"Joined Lobby");            
             InitializePacketHandlers();
             ClientSend.Joined();
         }
