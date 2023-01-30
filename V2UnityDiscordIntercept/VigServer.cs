@@ -10,7 +10,7 @@ namespace V2UnityDiscordIntercept
     {
         public override NetPeer Peer => server;
         public int Port { get; }
-        private NetServer server;
+        private NetServer server;        
 
         public VigServer(int port)
         {
@@ -54,10 +54,22 @@ namespace V2UnityDiscordIntercept
             server = null;
         }
 
-        private static void ConnectionApproval(NetIncomingMessage msg)
+        private void ConnectionApproval(NetIncomingMessage msg)
         {
             Logger.Log($"Connection approval requested from {msg.SenderConnection.RemoteUniqueIdentifier}");
-            msg.SenderConnection.Approve();
+
+            // Only allow new connections if we are still in the debug menu.
+            if (GameManager.instance.inDebug)
+            {
+                // Provide the new client with a member id.
+                var hail = server.CreateMessage();
+                hail.Write(server.ConnectionsCount);
+                msg.SenderConnection.Approve(hail);
+            }
+            else
+            {
+                msg.SenderConnection.Deny("Currently in game!");
+            }
         }
 
         public override void ReadMessages()
@@ -124,39 +136,38 @@ namespace V2UnityDiscordIntercept
 
                 var channelId = msg.SequenceChannel;
 
-                bool includeSenderInResponse = false;
-                if (includeSenderInResponse)
+                // Relay the message to all excluding sender
+                if (toUserId == 0L && server.Connections.Any(c => c.RemoteUniqueIdentifier != fromUserId))
                 {
-                    // Relay message to all
-                    if (toUserId == 0L)
-                    {
-                        server.SendMessage(relayMsg, server.Connections, GetDeliveryMethod(channelId), channelId);
-                        return;
-                    }
+                    SendDataMessageToAll(relayMsg, fromUserId, channelId);
                 }
-                else
+                // Send to target user
+                else if (toUserId != 0L)
                 {
-                    // Relay the message to all excluding sender
-                    if (toUserId == 0L && server.Connections.Any(c => c.RemoteUniqueIdentifier != fromUserId))
-                    {
-                        server.SendMessage(relayMsg, server.Connections.Where(c => c.RemoteUniqueIdentifier != fromUserId).ToList(), GetDeliveryMethod(channelId), channelId);
-                        return;
-                    }
+                    SendDataMessageToUser(relayMsg, toUserId, channelId);
                 }
 
-                var targetConnection = server.Connections.FirstOrDefault(c => c.RemoteUniqueIdentifier == toUserId);
-                if (targetConnection == null)
-                {
-                    Logger.Log($"Unable to find connection with id: {toUserId}");
-                    return;
-                }
-
-                server.SendMessage(relayMsg, targetConnection, GetDeliveryMethod(channelId), channelId);
             }
             catch (Exception e)
             {
                 Logger.Log(e.ToString() + $"{fromUserId} :" + string.Join(",", msg.Data));
             }
+        }
+
+        private void SendDataMessageToAll(NetOutgoingMessage relayMsg, long fromUserId, int channelId)
+        {
+            server.SendMessage(relayMsg, server.Connections.Where(c => c.RemoteUniqueIdentifier != fromUserId).ToList(), GetDeliveryMethod(channelId), channelId);
+        }
+
+        private void SendDataMessageToUser(NetOutgoingMessage relayMsg, long toUserId, int channelId)
+        {
+            var targetConnection = server.Connections.FirstOrDefault(c => c.RemoteUniqueIdentifier == toUserId);
+            if (targetConnection == null)
+            {
+                Logger.Log($"Unable to find connection with id: {toUserId}");
+                return;
+            }
+            server.SendMessage(relayMsg, targetConnection, GetDeliveryMethod(channelId), channelId);
         }
 
         private long GetUserIdFromNetworkMessage(NetIncomingMessage msg, int srcOffset)
@@ -170,7 +181,31 @@ namespace V2UnityDiscordIntercept
         private void StatusChanged(NetIncomingMessage msg)
         {
             var newStatus = (NetConnectionStatus)msg.ReadByte();
-            Logger.Log($"StatusChanged: {newStatus} - {msg.ReadString()}");            
+
+            switch (newStatus)
+            {
+                case NetConnectionStatus.Disconnected:
+                    OnMemberDisconnected(msg.SenderConnection.RemoteUniqueIdentifier);
+                    break;
+                default:
+                    Logger.Log($"StatusChanged: {newStatus}:{msg.SenderConnection.RemoteUniqueIdentifier} - {msg.ReadString()}");
+                    break;
+            }
+
+        }
+
+        private void OnMemberDisconnected(long userId)
+        {
+            var msg = server.CreateMessage();
+            msg.Write(userId);
+
+            using (var _packet = new Packet(44))
+            {
+                _packet.WriteLength();
+                msg.Write(_packet.ToArray());
+            }
+
+            SendDataMessageToAll(msg, userId, 0);
         }
     }
 }

@@ -7,11 +7,12 @@ namespace V2UnityDiscordIntercept
 {
     public abstract class Network
     {
-        public abstract NetPeer Peer { get; }        
+        public abstract NetPeer Peer { get; }
 
         protected delegate void PacketHandler(Packet _packet, long userId);
 
         protected IDictionary<int, PacketHandler> packetHandlers = new Dictionary<int, PacketHandler>();
+        
 
         public void Update()
         {
@@ -29,7 +30,7 @@ namespace V2UnityDiscordIntercept
             Peer.FlushSendQueue();
         }
 
-        public abstract void ReadMessages();                                 
+        public abstract void ReadMessages();
 
         public void SendTCPData(Packet _packet, long userId)
         {
@@ -52,8 +53,8 @@ namespace V2UnityDiscordIntercept
                 return;
             }
             DiscordController.instance.SendNetworkMessageToUser(userId, 1, _packet.ToArray());
-        }  
-        
+        }
+
         public static NetDeliveryMethod GetDeliveryMethod(int channelId)
         {
             return channelId == 0 ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.UnreliableSequenced;

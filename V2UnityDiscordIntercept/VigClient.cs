@@ -1,8 +1,10 @@
-﻿using Lidgren.Network;
+﻿using Discord;
+using Lidgren.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace V2UnityDiscordIntercept
 {
@@ -10,10 +12,30 @@ namespace V2UnityDiscordIntercept
     {
         public override NetPeer Peer => client;
 
-        private NetClient client;
+        private NetClient client;        
         public int MemberId { get; set; }
 
         private Dictionary<string, string> lobbyMetadata = new Dictionary<string, string>();
+
+        public NetConnectionStatus Status => client.ServerConnection.Status;
+
+        public void Disconnect(string byeMessage)
+        {
+            client.ServerConnection.Disconnect(byeMessage);
+        }
+
+        private void HandleMemberDisconnected(Packet _packet, long userId)
+        {
+            if (GameManager.instance.inDebug)
+            {
+                Demo.instance.MemberLeft(userId);
+                return;
+            }
+            GameObject.Destroy(GameManager.instance.networkMembers[userId].unit);
+            GameManager.instance.FUN_309A0(GameManager.instance.networkMembers[userId]);
+            GameManager.instance.networkMembers.Remove(userId);
+            GameManager.instance.networkIds.Remove(userId);
+        }
 
         public void ConnectToLobby(string ipAddress, int port)
         {
@@ -29,8 +51,7 @@ namespace V2UnityDiscordIntercept
 
         public void JoinLobby(long lobbyId, string secret)
         {
-            MemberId = client.ServerConnection.Peer.ConnectionsCount - 1;
-            Logger.Log($"Joined Lobby and received Member Id: {MemberId}");
+            Logger.Log($"Joined Lobby");
             InitializePacketHandlers();
             ClientSend.Joined();
         }
@@ -81,11 +102,12 @@ namespace V2UnityDiscordIntercept
                 {40, new PacketHandler(ClientHandle.TotaledAI)},
                 {41, new PacketHandler(ClientHandle.DropWeaponAI)},
                 {42, new PacketHandler(ClientHandle.Pause)},
-                {43, new PacketHandler(HandleLobbyMetadata) }
+                {43, new PacketHandler(HandleLobbyMetadata) },
+                {44, new PacketHandler(HandleMemberDisconnected) }
             };
         }
 
-        private static void StatusChanged(NetIncomingMessage msg)
+        private void StatusChanged(NetIncomingMessage msg)
         {
             var newStatus = (NetConnectionStatus)msg.ReadByte();
             Logger.Log($"StatusChanged: {newStatus} - {msg.ReadString()}");
@@ -93,7 +115,14 @@ namespace V2UnityDiscordIntercept
             switch (newStatus)
             {
                 case NetConnectionStatus.Connected:
+                    Plugin.ShowConnectionWindow = false;
+                    MemberId = msg.SenderConnection.RemoteHailMessage.ReadInt32();
+                    Logger.Log($"MemberId: {MemberId}");
                     Demo.instance.JoinLobby(0L, null);
+                    break;
+                case NetConnectionStatus.Disconnected:
+                    Plugin.ShowConnectionWindow = false;
+                    GameManager.instance.LoadDebug();
                     break;
             }
         }
@@ -101,28 +130,19 @@ namespace V2UnityDiscordIntercept
         private void Data(NetIncomingMessage msg)
         {
             // Gets the actual originator user id
-            long fromUserId = 0L;
-            byte[] data = new byte[0];
-            try
+            long fromUserId = GetUserIdFromNetworkMessage(msg);
+
+            var data = new byte[msg.Data.Length - 8];
+            Array.Copy(msg.Data, 8, data, 0, data.Length);
+            var channelId = msg.SequenceChannel;
+
+            if (channelId == 0)
             {
-                fromUserId = GetUserIdFromNetworkMessage(msg);
-
-                data = new byte[msg.Data.Length - 8];
-                Array.Copy(msg.Data, 8, data, 0, data.Length);
-                var channelId = msg.SequenceChannel;
-
-                if (channelId == 0)
-                {
-                    HandleTCPData(data, fromUserId);
-                }
-                if (channelId == 1 && data.Length >= 4)
-                {
-                    HandleUDPData(data, fromUserId);
-                }
+                HandleTCPData(data, fromUserId);
             }
-            catch (Exception e)
+            if (channelId == 1 && data.Length >= 4)
             {
-                Logger.Log(e.ToString() + "\r\n" + $"{fromUserId}\r\n" + string.Join(",", msg.Data) + "\r\n" + string.Join(",", data) + $"\r\ndata.Length: {data.Length}");
+                HandleUDPData(data, fromUserId);
             }
         }
 
@@ -152,7 +172,6 @@ namespace V2UnityDiscordIntercept
                 using (Packet packet = new Packet(receivedData.ReadBytes(num, true)))
                 {
                     int key = packet.ReadInt(true);
-                    Logger.Log($"Got packet with key: {(ClientPackets)key}");
                     packetHandlers[key](packet, userId);
                 }
                 num = 0;
@@ -172,15 +191,8 @@ namespace V2UnityDiscordIntercept
         {
             using (Packet packet = new Packet(_data))
             {
-                try
-                {
-                    int length = packet.ReadInt(true);
-                    _data = packet.ReadBytes(length, true);
-                }
-                catch
-                {
-                    Logger.Log("Failed to parse packet " + string.Join("-", packet.ToArray()));
-                }
+                int length = packet.ReadInt(true);
+                _data = packet.ReadBytes(length, true);
             }
             using (Packet packet2 = new Packet(_data))
             {

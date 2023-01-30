@@ -33,6 +33,9 @@
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath>D:\Users\Ryan\Downloads\v2unity\Vigilante2Unity_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>D:\Users\Ryan\Downloads\v2unity\Vigilante2Unity_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>D:\Users\Ryan\Downloads\v2unity\Vigilante2Unity_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
