@@ -47,39 +47,31 @@ namespace V2UnityDiscordIntercept
 
         private void ConnectionWindow(int windowId)
         {
-            if (Client == null)
+            GUILayout.Label("Username");
+            Username = GUILayout.TextField(Username);
+
+            GUILayout.Label("IP Address");
+            ipAddress = GUILayout.TextField(ipAddress);
+
+            GUILayout.Label("Port");
+            if (int.TryParse(GUILayout.TextField(Port.ToString()), out int newPort))
             {
-
-                GUILayout.Label("Username");
-                Username = GUILayout.TextField(Username);
-
-                GUILayout.Label("IP Address");
-                ipAddress = GUILayout.TextField(ipAddress);
-
-                GUILayout.Label("Port");
-                if (int.TryParse(GUILayout.TextField(Port.ToString()), out int newPort))
-                {
-                    Port = newPort;
-                }
-
-                using (new GUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("Close"))
-                    {
-                        ShowConnectionWindow = false;
-                    }
-
-                    GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Connect"))
-                    {
-                        Client = new VigClient();
-                        Client.ConnectToLobby(ipAddress, Port);
-                    }
-                }
+                Port = newPort;
             }
-            else
+
+            using (new GUILayout.HorizontalScope())
             {
-                GUILayout.Label("Connecting...");
+                if (GUILayout.Button("Close"))
+                {
+                    ShowConnectionWindow = false;
+                }
+
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Connect"))
+                {
+                    Client = new VigClient();
+                    Client.ConnectToLobby(ipAddress, Port);
+                }
             }
 
             GUI.DragWindow();

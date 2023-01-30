@@ -12,10 +12,12 @@ namespace V2UnityDiscordIntercept
     {
         public override NetPeer Peer => client;
 
-        private NetClient client;
+        private NetClient client;        
         public int MemberId { get; set; }
 
         private Dictionary<string, string> lobbyMetadata = new Dictionary<string, string>();
+
+        public NetConnectionStatus Status => client.ServerConnection.Status;
 
         public void Disconnect(string byeMessage)
         {
@@ -43,7 +45,7 @@ namespace V2UnityDiscordIntercept
             config.EnableMessageType(NetIncomingMessageType.StatusChanged);
             client = new NetClient(config);
             client.Start();
-            var netConnection = client.Connect(ipAddress, port);            
+            var netConnection = client.Connect(ipAddress, port);
             Logger.Log($"Created connection with id: {client.UniqueIdentifier}");
         }
 

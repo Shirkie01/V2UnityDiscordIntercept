@@ -10,7 +10,7 @@ namespace V2UnityDiscordIntercept
     {
         public override NetPeer Peer => server;
         public int Port { get; }
-        private NetServer server;
+        private NetServer server;        
 
         public VigServer(int port)
         {

@@ -12,6 +12,7 @@ namespace V2UnityDiscordIntercept
         protected delegate void PacketHandler(Packet _packet, long userId);
 
         protected IDictionary<int, PacketHandler> packetHandlers = new Dictionary<int, PacketHandler>();
+        
 
         public void Update()
         {
