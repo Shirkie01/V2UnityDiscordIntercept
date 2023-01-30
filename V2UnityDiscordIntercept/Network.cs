@@ -18,14 +18,7 @@ namespace V2UnityDiscordIntercept
             if (Peer == null)
                 return;
 
-            try
-            {
-                ReadMessages();
-            }
-            catch (Exception e)
-            {
-                Logger.Log(e.ToString());
-            }
+            ReadMessages();
         }
 
         public void LateUpdate()

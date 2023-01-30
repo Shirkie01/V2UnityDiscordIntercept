@@ -49,7 +49,7 @@ namespace V2UnityDiscordIntercept
 
         public void JoinLobby(long lobbyId, string secret)
         {
-            Logger.Log($"Joined Lobby");            
+            Logger.Log($"Joined Lobby");
             InitializePacketHandlers();
             ClientSend.Joined();
         }
@@ -126,28 +126,19 @@ namespace V2UnityDiscordIntercept
         private void Data(NetIncomingMessage msg)
         {
             // Gets the actual originator user id
-            long fromUserId = 0L;
-            byte[] data = new byte[0];
-            try
+            long fromUserId = GetUserIdFromNetworkMessage(msg);
+
+            var data = new byte[msg.Data.Length - 8];
+            Array.Copy(msg.Data, 8, data, 0, data.Length);
+            var channelId = msg.SequenceChannel;
+
+            if (channelId == 0)
             {
-                fromUserId = GetUserIdFromNetworkMessage(msg);
-
-                data = new byte[msg.Data.Length - 8];
-                Array.Copy(msg.Data, 8, data, 0, data.Length);
-                var channelId = msg.SequenceChannel;
-
-                if (channelId == 0)
-                {
-                    HandleTCPData(data, fromUserId);
-                }
-                if (channelId == 1 && data.Length >= 4)
-                {
-                    HandleUDPData(data, fromUserId);
-                }
+                HandleTCPData(data, fromUserId);
             }
-            catch (Exception e)
-            {                
-                Logger.Log(e.ToString() + "\r\n" + $"{fromUserId}\r\n" + string.Join(",", msg.Data) + "\r\n" + string.Join(",", data) + $"\r\ndata.Length: {data.Length}");
+            if (channelId == 1 && data.Length >= 4)
+            {
+                HandleUDPData(data, fromUserId);
             }
         }
 
@@ -176,7 +167,7 @@ namespace V2UnityDiscordIntercept
             {
                 using (Packet packet = new Packet(receivedData.ReadBytes(num, true)))
                 {
-                    int key = packet.ReadInt(true);                    
+                    int key = packet.ReadInt(true);
                     packetHandlers[key](packet, userId);
                 }
                 num = 0;
@@ -196,15 +187,8 @@ namespace V2UnityDiscordIntercept
         {
             using (Packet packet = new Packet(_data))
             {
-                try
-                {
-                    int length = packet.ReadInt(true);
-                    _data = packet.ReadBytes(length, true);
-                }
-                catch
-                {
-                    Logger.Log("Failed to parse packet " + string.Join("-", packet.ToArray()));
-                }
+                int length = packet.ReadInt(true);
+                _data = packet.ReadBytes(length, true);
             }
             using (Packet packet2 = new Packet(_data))
             {
