@@ -43,7 +43,7 @@ namespace V2UnityDiscordIntercept
             config.EnableMessageType(NetIncomingMessageType.StatusChanged);
             client = new NetClient(config);
             client.Start();
-            var netConnection = client.Connect(ipAddress, port);
+            var netConnection = client.Connect(ipAddress, port);            
             Logger.Log($"Created connection with id: {client.UniqueIdentifier}");
         }
 
@@ -113,11 +113,13 @@ namespace V2UnityDiscordIntercept
             switch (newStatus)
             {
                 case NetConnectionStatus.Connected:
+                    Plugin.ShowConnectionWindow = false;
                     MemberId = msg.SenderConnection.RemoteHailMessage.ReadInt32();
                     Logger.Log($"MemberId: {MemberId}");
                     Demo.instance.JoinLobby(0L, null);
                     break;
                 case NetConnectionStatus.Disconnected:
+                    Plugin.ShowConnectionWindow = false;
                     GameManager.instance.LoadDebug();
                     break;
             }

@@ -57,11 +57,19 @@ namespace V2UnityDiscordIntercept
         private void ConnectionApproval(NetIncomingMessage msg)
         {
             Logger.Log($"Connection approval requested from {msg.SenderConnection.RemoteUniqueIdentifier}");
-            
-            // Provide the new client with a member id.
-            var hail = server.CreateMessage();
-            hail.Write(server.ConnectionsCount);
-            msg.SenderConnection.Approve(hail);
+
+            // Only allow new connections if we are still in the debug menu.
+            if (GameManager.instance.inDebug)
+            {
+                // Provide the new client with a member id.
+                var hail = server.CreateMessage();
+                hail.Write(server.ConnectionsCount);
+                msg.SenderConnection.Approve(hail);
+            }
+            else
+            {
+                msg.SenderConnection.Deny("Currently in game!");
+            }
         }
 
         public override void ReadMessages()

@@ -24,7 +24,7 @@ namespace V2UnityDiscordIntercept
         public static bool LogErrors { get; set; } = true;
         public static bool ShowErrorWindow { get; set; }
         private float secondsToShowWindow = -1;
-        private Rect errorWindowRect = new Rect(200, 200, 600, 400);
+        private Rect errorWindowRect = new Rect(200, 200, 800, 400);
         private Vector2 errorWindowScrollPos = Vector2.zero;
 
         private readonly IList<Exception> errors = new List<Exception>();
@@ -47,32 +47,39 @@ namespace V2UnityDiscordIntercept
 
         private void ConnectionWindow(int windowId)
         {
-            GUILayout.Label("Username");
-            Username = GUILayout.TextField(Username);
-
-            GUILayout.Label("IP Address");
-            ipAddress = GUILayout.TextField(ipAddress);
-
-            GUILayout.Label("Port");
-            if (int.TryParse(GUILayout.TextField(Port.ToString()), out int newPort))
+            if (Client == null)
             {
-                Port = newPort;
+
+                GUILayout.Label("Username");
+                Username = GUILayout.TextField(Username);
+
+                GUILayout.Label("IP Address");
+                ipAddress = GUILayout.TextField(ipAddress);
+
+                GUILayout.Label("Port");
+                if (int.TryParse(GUILayout.TextField(Port.ToString()), out int newPort))
+                {
+                    Port = newPort;
+                }
+
+                using (new GUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Close"))
+                    {
+                        ShowConnectionWindow = false;
+                    }
+
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Connect"))
+                    {
+                        Client = new VigClient();
+                        Client.ConnectToLobby(ipAddress, Port);
+                    }
+                }
             }
-
-            using (new GUILayout.HorizontalScope())
+            else
             {
-                if (GUILayout.Button("Close"))
-                {
-                    ShowConnectionWindow = false;
-                }
-
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Connect"))
-                {
-                    Client = new VigClient();
-                    Client.ConnectToLobby(ipAddress, Port);
-                    ShowConnectionWindow = false;
-                }
+                GUILayout.Label("Connecting...");
             }
 
             GUI.DragWindow();
@@ -80,15 +87,16 @@ namespace V2UnityDiscordIntercept
 
         private void ErrorWindow(int windowId)
         {
-            GUILayout.Label("Press F2 to show/hide this window.");
-            GUILayout.Label("");
-            errorWindowScrollPos = GUILayout.BeginScrollView(errorWindowScrollPos);
+            GUILayout.Box("Press F2 to show/hide this window.");
+
+            errorWindowScrollPos = GUILayout.BeginScrollView(errorWindowScrollPos, "box");
             foreach (var error in errors)
             {
-                GUILayout.Label(error.ToString());
-                GUILayout.Label("");
+                GUILayout.Label(error.ToString(), "box");
             }
             GUILayout.EndScrollView();
+
+            GUI.DragWindow();
         }
 
         public void Update()
