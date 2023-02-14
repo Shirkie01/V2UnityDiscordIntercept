@@ -8,16 +8,14 @@ using UnityEngine;
 
 namespace V2UnityDiscordIntercept
 {
-    public class VigClient : Network
+    public class VigClient : VigPeer
     {
-        public override NetPeer Peer => client;
+        protected override NetPeer Peer => client;
 
-        private NetClient client;        
+        private NetClient client;
         public int MemberId { get; set; }
 
-        private Dictionary<string, string> lobbyMetadata = new Dictionary<string, string>();
-
-        public NetConnectionStatus Status => client.ServerConnection.Status;
+        private Dictionary<string, string> lobbyMetadata = new Dictionary<string, string>();        
 
         public void Disconnect(string byeMessage)
         {
@@ -212,32 +210,39 @@ namespace V2UnityDiscordIntercept
             NetIncomingMessage msg;
             while ((msg = Peer.ReadMessage()) != null)
             {
-                switch (msg.MessageType)
+                try
                 {
-                    case NetIncomingMessageType.DiscoveryResponse:
-                        Logger.Log($"Found server at {msg.SenderEndPoint} with name {msg.ReadString()}");
-                        break;
+                    switch (msg.MessageType)
+                    {
+                        case NetIncomingMessageType.DiscoveryResponse:
+                            Logger.Log($"Found server at {msg.SenderEndPoint} with name {msg.ReadString()}");
+                            break;
 
-                    case NetIncomingMessageType.VerboseDebugMessage:
-                    case NetIncomingMessageType.DebugMessage:
-                    case NetIncomingMessageType.WarningMessage:
-                    case NetIncomingMessageType.ErrorMessage:
-                        Logger.Log(msg.ReadString());
-                        break;
+                        case NetIncomingMessageType.VerboseDebugMessage:
+                        case NetIncomingMessageType.DebugMessage:
+                        case NetIncomingMessageType.WarningMessage:
+                        case NetIncomingMessageType.ErrorMessage:
+                            Logger.Log(msg.ReadString());
+                            break;
 
-                    case NetIncomingMessageType.StatusChanged:
-                        StatusChanged(msg);
-                        break;
+                        case NetIncomingMessageType.StatusChanged:
+                            StatusChanged(msg);
+                            break;
 
-                    case NetIncomingMessageType.Data:
-                        Data(msg);
-                        break;
+                        case NetIncomingMessageType.Data:
+                            Data(msg);
+                            break;
 
-                    default:
-                        Logger.Log("Unhandled type: " + msg.MessageType + "\n" + msg.ToString());
-                        break;
+                        default:
+                            Logger.Log("Unhandled type: " + msg.MessageType + "\n" + msg.ToString());
+                            break;
+                    }
+                    Peer.Recycle(msg);
                 }
-                Peer.Recycle(msg);
+                catch (Exception e)
+                {
+                    Logger.Log($"Bad message: {string.Join(",", msg.Data)}.\r\n {e}");
+                }
             }
         }
 

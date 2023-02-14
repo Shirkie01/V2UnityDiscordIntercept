@@ -18,7 +18,7 @@ namespace V2UnityDiscordIntercept.Patches
 
             Plugin.Client = new VigClient();
             Plugin.Client.ConnectToLobby("localhost", Plugin.Port);
-            DiscordController.instance.SetLobbyOwner(Plugin.Client.Peer.UniqueIdentifier);
+            DiscordController.instance.SetLobbyOwner(Plugin.Client.Identifier);            
             return false;
         }
     }

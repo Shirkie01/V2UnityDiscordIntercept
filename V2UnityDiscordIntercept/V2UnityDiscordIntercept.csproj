@@ -42,7 +42,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /y $(TargetPath) &quot;D:\Users\Ryan\Downloads\v2unity\BepInEx\plugins&quot;" />
+    <Exec Command="xcopy /r/y &quot;$(TargetDir)V2Unity*.*&quot; &quot;D:\Users\Ryan\Downloads\v2unity\BepInEx\plugins&quot;" />
   </Target>
 
 </Project>

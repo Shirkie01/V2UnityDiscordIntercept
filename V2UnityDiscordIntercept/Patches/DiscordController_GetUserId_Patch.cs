@@ -11,7 +11,7 @@ namespace V2UnityDiscordIntercept.Patches
         [HarmonyPrefix]
         public static bool GetUserId(ref long __result)
         {
-            __result = Plugin.Client.Peer.UniqueIdentifier;
+            __result = Plugin.Client.Identifier;
             return false;
         }
     }

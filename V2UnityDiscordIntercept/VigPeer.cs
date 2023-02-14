@@ -5,14 +5,15 @@ using System.Linq;
 
 namespace V2UnityDiscordIntercept
 {
-    public abstract class Network
+    public abstract class VigPeer
     {
-        public abstract NetPeer Peer { get; }
+        protected abstract NetPeer Peer { get; }
 
         protected delegate void PacketHandler(Packet _packet, long userId);
 
         protected IDictionary<int, PacketHandler> packetHandlers = new Dictionary<int, PacketHandler>();
         
+        public long Identifier => Peer.UniqueIdentifier;
 
         public void Update()
         {
@@ -54,8 +55,8 @@ namespace V2UnityDiscordIntercept
             }
             DiscordController.instance.SendNetworkMessageToUser(userId, 1, _packet.ToArray());
         }
-
-        public static NetDeliveryMethod GetDeliveryMethod(int channelId)
+        
+        protected static NetDeliveryMethod GetDeliveryMethod(int channelId)
         {
             return channelId == 0 ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.UnreliableSequenced;
         }

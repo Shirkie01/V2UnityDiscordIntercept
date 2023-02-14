@@ -6,11 +6,11 @@ using System.Text;
 
 namespace V2UnityDiscordIntercept
 {
-    public class VigServer : Network
+    public class VigServer : VigPeer
     {
-        public override NetPeer Peer => server;
+        protected override NetPeer Peer => server;
         public int Port { get; }
-        private NetServer server;        
+        private NetServer server;
 
         public VigServer(int port)
         {
@@ -119,8 +119,8 @@ namespace V2UnityDiscordIntercept
                 // We got some data. It needs to either be relayed to a specific user,
                 // or relayed to everybody. We recreate the message excluding the target user id,
                 // as the target user id is specifically for the server to know where to send the data.
-                fromUserId = GetUserIdFromNetworkMessage(msg, 0);
-                toUserId = GetUserIdFromNetworkMessage(msg, 8);
+                fromUserId = msg.ReadInt64();
+                toUserId = msg.ReadInt64();
 
                 // We recreate the message excluding the target user id.
                 var relayMsg = server.CreateMessage();
@@ -168,14 +168,6 @@ namespace V2UnityDiscordIntercept
                 return;
             }
             server.SendMessage(relayMsg, targetConnection, GetDeliveryMethod(channelId), channelId);
-        }
-
-        private long GetUserIdFromNetworkMessage(NetIncomingMessage msg, int srcOffset)
-        {
-            byte[] userIdBytes = new byte[8];
-            Array.Copy(msg.Data, srcOffset, userIdBytes, 0, 8);
-            var fromUserId = BitConverter.ToInt64(userIdBytes);
-            return fromUserId;
         }
 
         private void StatusChanged(NetIncomingMessage msg)
